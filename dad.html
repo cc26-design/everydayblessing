@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>給把拔的每日一句</title>
+  <style>
+    :root{
+      --bg1:#08110d; --bg2:#14231c;
+      --card: rgba(255,255,255,.07);
+      --bd: rgba(255,255,255,.14);
+      --tx:#f3f6f4;
+      --mut: rgba(243,246,244,.78);
+      --ac:#2f7a57;
+      --ac2:#4aa377;
+      --gold: rgba(255, 216, 120, .95);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      min-height:100vh;
+      min-height:100svh;
+      font-family: system-ui,-apple-system,"Noto Sans TC",sans-serif;
+      background: radial-gradient(1200px 800px at 15% 10%, var(--bg2), var(--bg1));
+      color: var(--tx);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* subtle floating icons in the background */
+    .float{
+      position: fixed;
+      inset: 0;
+      pointer-events:none;
+      opacity:.32;
+      z-index: 0;
+      filter: blur(.2px);
+    }
+    .float span{
+      position:absolute;
+      font-size: 18px;
+      animation: drift 10s linear infinite;
+      opacity:.7;
+    }
+    @keyframes drift{
+      0%{ transform: translateY(20px) translateX(0) rotate(0deg); opacity:0; }
+      15%{ opacity:.7; }
+      100%{ transform: translateY(-120vh) translateX(80px) rotate(18deg); opacity:0; }
+    }
+
+    /* snow layer (behind card, above background) */
+    #snow{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+    }
+    .snowflake{
+      position: absolute;
+      top: -10vh;
+      color: rgba(255,255,255,.92);
+      text-shadow: 0 8px 18px rgba(0,0,0,.35);
+      will-change: transform;
+      animation-name: snowFall, snowDrift;
+      animation-timing-function: linear, ease-in-out;
+      animation-iteration-count: infinite, infinite;
+      user-select:none;
+    }
+    @keyframes snowFall{ to { transform: translateY(120vh); } }
+    @keyframes snowDrift{
+      0% { margin-left: 0px; }
+      50% { margin-left: 28px; }
+      100% { margin-left: 0px; }
+    }
+
+    .card{
+      width:min(760px, 96vw);
+      padding: 22px;
+      border-radius: 24px;
+      background: var(--card);
+      border: 1px solid var(--bd);
+      box-shadow: 0 16px 44px rgba(0,0,0,.45);
+      text-align:center;
+      backdrop-filter: blur(8px);
+      position: relative;
+      z-index: 2;
+    }
+    .topline{
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      flex-wrap:wrap;
+      font-size: 13px;
+      color: var(--mut);
+      margin-bottom: 10px;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.14);
+    }
+    h1{
+      margin: 0 0 8px;
+      font-size: 22px;
+      letter-spacing: .2px;
+    }
+    .sub{
+      margin: 0 0 16px;
+      color: var(--mut);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .giftline{
+      display:flex;
+      justify-content:center;
+      gap:8px;
+      margin: 4px 0 16px;
+      opacity:.95;
+      flex-wrap:wrap;
+    }
+    .giftline span{
+      padding: 8px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.04);
+      font-size: 13px;
+      color: rgba(243,246,244,.88);
+    }
+
+    /* ✅ 上方 icon 改回愛心，不要禮物 */
+    .heart{
+      font-size: 56px;
+      margin: 6px 0 10px;
+      filter: drop-shadow(0 10px 22px rgba(0,0,0,.35));
+      animation: pop .55s ease both;
+    }
+    @keyframes pop{
+      0%{ transform: scale(.88); opacity:0; }
+      60%{ transform: scale(1.08); opacity:1; }
+      100%{ transform: scale(1); opacity:1; }
+    }
+
+    /* ===== Gift-wrap quote area ===== */
+    .quoteWrap{
+      padding: 14px 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.14);
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+      min-height: 128px;
+    }
+
+    .quote{
+      font-size: 22px;
+      line-height: 1.75;
+      margin: 0;
+      opacity: 0;
+      transform: translateY(8px);
+      filter: blur(2px);
+      transition: opacity .55s ease, transform .55s ease, filter .55s ease;
+
+      /* 讓內容可換行（氣象梗可能有換行） */
+      white-space: pre-line;
+    }
+    .date{
+      margin-top: 10px;
+      font-size: 12.5px;
+      color: rgba(243,246,244,.72);
+      display:flex;
+      justify-content:center;
+      gap:12px;
+      flex-wrap:wrap;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity .55s ease .08s, transform .55s ease .08s;
+    }
+    .date strong{ color: var(--gold); font-weight: 650; }
+
+    /* Gift cover overlay */
+    .giftCover{
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      pointer-events: none;
+    }
+    .giftCover .panel{
+      position: absolute;
+      left: 0; right: 0;
+      height: 50%;
+      background: linear-gradient(135deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(6px);
+    }
+    .giftCover .panel.top{
+      top: 0;
+      border-bottom: 0;
+      border-radius: 18px 18px 0 0;
+    }
+    .giftCover .panel.bottom{
+      bottom: 0;
+      border-top: 0;
+      border-radius: 0 0 18px 18px;
+    }
+
+    .giftCover .ribbonV{
+      position:absolute;
+      top:-10px; bottom:-10px;
+      left: 50%;
+      width: 34px;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg, rgba(74,163,119,.9), rgba(47,122,87,.9));
+      opacity:.85;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.25));
+    }
+    .giftCover .ribbonH{
+      position:absolute;
+      left:-10px; right:-10px;
+      top: 50%;
+      height: 30px;
+      transform: translateY(-50%);
+      background: linear-gradient(90deg, rgba(74,163,119,.9), rgba(47,122,87,.9));
+      opacity:.75;
+    }
+    .giftCover .bow{
+      position:absolute;
+      top:50%; left:50%;
+      transform: translate(-50%,-50%);
+      font-size: 30px;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
+    }
+    /* ✅ 拿掉 hint 裡面的禮物 icon（避免你覺得又一個禮物） */
+    .giftCover .hint{
+      position:absolute;
+      inset: 0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap: 6px;
+      color: rgba(243,246,244,.92);
+      text-shadow: 0 10px 20px rgba(0,0,0,.35);
+      padding: 10px 14px;
+    }
+    .giftCover .hint .t1{ font-size: 14px; opacity: .95; }
+    .giftCover .hint .t2{ font-size: 12px; opacity: .75; }
+
+    /* Opening animation */
+    .quoteWrap.opening .panel.top{ animation: openTop .65s ease forwards; }
+    .quoteWrap.opening .panel.bottom{ animation: openBottom .65s ease forwards; }
+    .quoteWrap.opening .ribbonV,
+    .quoteWrap.opening .ribbonH,
+    .quoteWrap.opening .bow,
+    .quoteWrap.opening .hint{
+      animation: fadeOut .35s ease .28s forwards;
+    }
+    @keyframes openTop{ to { transform: translateY(-115%); opacity:0; } }
+    @keyframes openBottom{ to { transform: translateY(115%); opacity:0; } }
+    @keyframes fadeOut{ to { opacity:0; transform: translate(-50%,-50%) scale(.98); } }
+
+    .quoteWrap.revealed .quote{
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+    .quoteWrap.revealed .date{
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .quoteWrap.revealed .giftCover{ display:none; }
+
+    .btnrow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 18px;
+    }
+    button{
+      flex:1;
+      min-width: 240px;
+      border:0;
+      cursor:pointer;
+      border-radius: 16px;
+      padding: 14px 14px;
+      font-size: 15px;
+      color:white;
+      background: var(--ac);
+      transition: transform .06s ease, background .2s ease;
+    }
+    button:hover{ background: var(--ac2); }
+    button:active{ transform: translateY(1px); }
+
+    .tiny{
+      margin-top: 12px;
+      font-size: 12px;
+      color: rgba(243,246,244,.65);
+      line-height: 1.6;
+    }
+
+    canvas#fx{
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 3;
+    }
+    /* =========================
+       📱 Mobile scroll patch
+       讓頁面可往下滑、避免卡片被置中擠出畫面
+    ========================= */
+    @media (max-width: 520px), (max-height: 740px){
+      body{
+        align-items: flex-start;
+        justify-content: flex-start;
+        padding-top: 14px;
+        padding-bottom: 28px;
+      }
+      .card{ margin-bottom: 18px; }
+      button{ min-width: 200px; }
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="float" aria-hidden="true" id="float"></div>
+  <div id="snow" aria-hidden="true"></div>
+  <canvas id="fx"></canvas>
+
+  <div class="card">
+    <div class="topline">
+      <div class="badge">🎄 每日一句</div>
+      <div class="badge">💚 給把拔的小禮物</div>
+      <div class="badge">😎 會心一笑版</div>
+    </div>
+
+    <h1>💚 把拔今日份提醒（不保證正經）</h1>
+    <p class="sub">節日就節日梗，平日就平日梗；總之先拆封。</p>
+
+    <div class="giftline">
+      <span>🎆 拆開時放煙花</span>
+      <span>❄️ 雪一直飄</span>
+      <span>📉 氣象可能出現</span>
+    </div>
+
+    <!-- ✅ 這裡改回愛心，不要禮物 -->
+    <div class="heart" id="bigHeart">🤍</div>
+
+    <div class="quoteWrap" id="wrap">
+      <div class="giftCover" aria-hidden="true">
+        <div class="panel top"></div>
+        <div class="panel bottom"></div>
+        <div class="ribbonV"></div>
+        <div class="ribbonH"></div>
+        <div class="bow">🎀</div>
+        <div class="hint">
+          <div class="t1">把拔今日份內容已打包</div>
+          <div class="t2">點下方按鈕拆封（不退不換）</div>
+        </div>
+      </div>
+
+      <p class="quote" id="quote"></p>
+      <div class="date" id="meta"></div>
+    </div>
+
+    <!-- ✅ 兩顆按鈕改一顆 -->
+    <div class="btnrow">
+      <button id="action">取得</button>
+    </div>
+
+    <div class="tiny">
+      同一天固定同一句；明天會換新的。<br/>
+      若你更新句庫但沒變：請下拉重整或關掉 Safari 分頁再開。
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ====== Floating icons ======
+  const float = document.getElementById("float");
+  const icons = ["✨","🎄","💚","🕯️","⭐","🎆","🩷","❄️","🍪","☕","🧣","😎","🧠","🧤"];
+  for (let i=0;i<22;i++){
+    const s = document.createElement("span");
+    s.textContent = icons[Math.floor(Math.random()*icons.length)];
+    s.style.left = Math.floor(Math.random()*100) + "vw";
+    s.style.top = (60 + Math.random()*60) + "vh";
+    s.style.animationDuration = (8 + Math.random()*9) + "s";
+    s.style.animationDelay = (-Math.random()*12) + "s";
+    s.style.fontSize = (14 + Math.random()*18) + "px";
+    float.appendChild(s);
+  }
+
+  // ====== Snow ======
+  (function makeSnow(){
+    const snow = document.getElementById("snow");
+    if (!snow) return;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const count = isMobile ? 34 : 52;
+    const flakes = ["❄️","✻","✼","❅"];
+    for (let i=0;i<count;i++){
+      const flake = document.createElement("div");
+      flake.className = "snowflake";
+      flake.textContent = flakes[Math.floor(Math.random()*flakes.length)];
+      const left = Math.random() * 100;
+      const size = 10 + Math.random() * 14;
+      const fallDur = 10 + Math.random() * 12;
+      const driftDur = 3.2 + Math.random() * 4.2;
+      const delay = -Math.random() * fallDur;
+      const opacity = 0.45 + Math.random() * 0.40;
+      flake.style.left = left + "vw";
+      flake.style.fontSize = size + "px";
+      flake.style.opacity = opacity;
+      flake.style.animationDuration = `${fallDur}s, ${driftDur}s`;
+      flake.style.animationDelay = `${delay}s, ${-Math.random()*driftDur}s`;
+      snow.appendChild(flake);
+    }
+  })();
+
+  // ====== Core ======
+  const hearts = ["❤️","🩷","🧡","💛","💚","🩵","💙","💜","🤎","🤍","💖","💝","💞","💕","✨","😎","🎄"];
+  const quoteEl = document.getElementById("quote");
+  const heartEl = document.getElementById("bigHeart");
+  const metaEl = document.getElementById("meta");
+  const wrap = document.getElementById("wrap");
+  const btnAction = document.getElementById("action");
+
+  let revealed = false;
+  let todayCache = null;
+
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function ymd(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+  function todayKey(){ return ymd(new Date()); }
+
+  function hashString(s){
+    let h = 2166136261;
+    for (let i=0;i<s.length;i++){
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0);
+  }
+
+  async function loadMessageSource(){
+    const res = await fetch("./messages.json?v=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("messages.json 讀取失敗");
+    const data = await res.json();
+
+    const fullRaw = Array.isArray(data.full) ? data.full
+                  : Array.isArray(data.messages) ? data.messages
+                  : [];
+    const full = fullRaw.filter(s => typeof s === "string" && s.trim()).map(s => s.trim());
+
+    const partsObj = (data && typeof data.parts === "object" && data.parts) ? data.parts : {};
+    const openers = Array.isArray(partsObj.openers) ? partsObj.openers.map(v=>String(v)) : [];
+    const bodies  = Array.isArray(partsObj.bodies)  ? partsObj.bodies.map(v=>String(v))  : [];
+    const closers = Array.isArray(partsObj.closers) ? partsObj.closers.map(v=>String(v)) : [];
+    const emojis  = Array.isArray(partsObj.emojis)  ? partsObj.emojis.map(v=>String(v))  : [];
+
+    const events = Array.isArray(data.events) ? data.events : [];
+
+    return { full, parts: { openers, bodies, closers, emojis }, events };
+  }
+
+  function withBabaPrefix(msg){
+    const cleaned = String(msg).replace(/^(把拔|爸爸)[，,、\s]*/,"").trim();
+    return `把拔，${cleaned}`;
+  }
+
+  function pickFrom(arr, seed){
+    if (!arr || !arr.length) return "";
+    const h = hashString(seed);
+    return arr[h % arr.length];
+  }
+
+  function composeFromParts(parts, seed){
+    const opener = pickFrom(parts.openers, seed + "|o");
+    const body   = pickFrom(parts.bodies,  seed + "|b");
+    const closer = pickFrom(parts.closers, seed + "|c");
+    const emoji  = pickFrom(parts.emojis,  seed + "|e");
+    const core = (opener || "") + (body || "") + (closer || "");
+    return (core + (emoji || "")).replace(/\s+/g, "");
+  }
+
+  function pickDailyMixed(source){
+    const key = todayKey() + "|mix";
+    const h = hashString(key);
+    const hasFull = source.full.length > 0;
+    const hasParts = source.parts.bodies && source.parts.bodies.length > 0;
+    const useFull = hasFull && (!hasParts || (h % 100) < 55);
+    return useFull
+      ? source.full[h % source.full.length]
+      : composeFromParts(source.parts, key);
+  }
+
+  // ====== Holiday logic (today or tomorrow) ======
+  function matchEventForDate(ev, d){
+    const m = d.getMonth()+1;
+    const day = d.getDate();
+    return (Number(ev.month) === m && Number(ev.day) === day);
+  }
+
+  function pickEventMessage(source, now){
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate()+1);
+
+    for (const ev of source.events){
+      if (matchEventForDate(ev, now)){
+        const list = Array.isArray(ev.today) ? ev.today : [];
+        if (list.length) return { text: pickFrom(list, ymd(now) + "|event|" + (ev.name||"")), kind: "today" };
+      }
+    }
+    for (const ev of source.events){
+      if (matchEventForDate(ev, tomorrow)){
+        const list = Array.isArray(ev.tomorrow) ? ev.tomorrow : [];
+        if (list.length) return { text: pickFrom(list, ymd(now) + "|event-tmr|" + (ev.name||"")), kind: "tomorrow" };
+      }
+    }
+    return null;
+  }
+
+  // ====== Fake weather as ONE of the daily messages (not additive) ======
+  function fakeForecastMessage(dateKeyStr){
+    const h = hashString(dateKeyStr + "|wx");
+    const temp = 10 + (h % 25);          // 10~34
+    const rain = (h >>> 8) % 101;        // 0~100
+    const feels = [
+      "體感像冰箱出門散步",
+      "體感像被窩在開會等你",
+      "體感像烤箱開低溫模式",
+      "體感像冷氣開太強",
+      "體感像正常但你不信",
+      "體感像風很有個性"
+    ];
+    const feel = feels[(h >>> 16) % feels.length];
+    return withBabaPrefix(`今天氣溫判斷：${temp}°C｜降雨機率：${rain}%（保證不準確）\n${feel}。`);
+  }
+
+  async function prepareToday(force=false){
+    if (todayCache && !force) return todayCache;
+
+    const source = await loadMessageSource();
+    const now = new Date();
+
+    const dateStr = now.toLocaleDateString("zh-TW", {
+      year:"numeric", month:"long", day:"numeric", weekday:"long"
+    });
+
+    // 1) 節日優先（只出一段）
+    const eventPick = pickEventMessage(source, now);
+
+    let msg = "";
+    if (eventPick) {
+      msg = withBabaPrefix(eventPick.text);
+    } else {
+      // 2) 非節日：從「一般句庫」和「氣象句庫」二選一（只出一段）
+      const key = todayKey();
+      const h = hashString(key + "|pool");
+
+      const weatherChance = 30; // 氣象梗出現機率（%）
+      const pickWeather = (h % 100) < weatherChance;
+
+      msg = pickWeather ? fakeForecastMessage(key)
+                        : withBabaPrefix(pickDailyMixed(source));
+    }
+
+    const heart = hearts[(hashString(todayKey() + "|heart") >>> 8) % hearts.length];
+    todayCache = { msg, heart, dateStr };
+    return todayCache;
+  }
+
+  function paintToday(){
+    heartEl.textContent = todayCache.heart;
+    quoteEl.textContent = todayCache.msg;
+    metaEl.innerHTML = `<span>📅 <strong>${todayCache.dateStr}</strong></span><span>🎄 今日一句</span>`;
+  }
+
+  // ====== Fireworks ======
+  const canvas = document.getElementById("fx");
+  const ctx = canvas.getContext("2d");
+
+  function resizeCanvas(){
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+
+  const particles = [];
+  function burst(x, y){
+    const colors = ["#ffd878","#fff2b0","#ffffff","#7de7b1","#6ee7ff","#ff9bd1","#c4b5fd"];
+    const count = 95;
+    for (let i=0;i<count;i++){
+      const a = Math.random() * Math.PI * 2;
+      const sp = 2 + Math.random() * 5.6;
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - (1.6 + Math.random()*1.2),
+        life: 60 + Math.floor(Math.random()*30),
+        r: 1.1 + Math.random()*2.4,
+        color: colors[Math.floor(Math.random()*colors.length)]
+      });
+    }
+  }
+  function animate(){
+    ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+    for (let i = particles.length - 1; i >= 0; i--){
+      const p = particles[i];
+      p.life -= 1;
+      p.vy += 0.085;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vx *= 0.985;
+      p.vy *= 0.985;
+
+      const alpha = Math.max(0, Math.min(1, p.life / 85));
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.fillStyle = p.color;
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fill();
+
+      if (p.life <= 0 || p.y > window.innerHeight + 60) particles.splice(i, 1);
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  function fireworks(){
+    const cx = window.innerWidth * 0.5;
+    const cy = window.innerHeight * 0.43;
+    burst(cx, cy);
+    burst(cx - 130, cy + 35);
+    burst(cx + 135, cy + 15);
+  }
+
+  async function revealGift(){
+    if (revealed) return;
+    revealed = true;
+
+    await prepareToday(false);
+    paintToday();
+
+    wrap.classList.remove("revealed");
+    wrap.classList.add("opening");
+
+    setTimeout(() => {
+      wrap.classList.remove("opening");
+      wrap.classList.add("revealed");
+    }, 520);
+
+    setTimeout(() => fireworks(), 120);
+
+    // ✅ 點一次後按鈕變成「再放一次煙花」
+    btnAction.textContent = "再放一次煙花 🎆";
+  }
+
+  btnAction.addEventListener("click", async () => {
+    if (!revealed) return revealGift();
+    fireworks();
+  });
+
+  // preload
+  prepareToday(false).catch(()=>{});
+})();
+</script>
+</body>
+</html>
