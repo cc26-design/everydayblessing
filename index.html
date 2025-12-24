@@ -321,13 +321,21 @@
        📱 Mobile scroll patch
        讓頁面可往下滑、避免卡片被置中擠出畫面
     ========================= */
-    @media (max-width: 520px), (max-height: 740px){
+    @media (max-width: 520px){
       body{
         align-items: flex-start;
         justify-content: flex-start;
         padding-top: 14px;
         padding-bottom: 28px;
       }
+
+    @media (max-height: 740px) and (max-width: 900px){
+body{
+        align-items: flex-start;
+        justify-content: flex-start;
+        padding-top: 14px;
+        padding-bottom: 28px;
+    }
       .card{ margin-bottom: 18px; }
       button{ min-width: 200px; }
     }
